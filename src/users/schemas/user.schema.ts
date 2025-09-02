@@ -9,17 +9,18 @@ export class User {
   @Prop({ required: true, unique: true, lowercase: true })
   email: string;
 
-  @Prop({ required: true, unique: true }) // unique mobile number
+  @Prop({ required: true, unique: true })
   mobileNo: string;
 
-  @Prop({ required: true })
-  nationality: string;
+  // ✅ Optional fields
+  @Prop()
+  nationality?: string;
 
-  @Prop({ required: true })
-  idType: string;
+  @Prop()
+  idType?: string;
 
-  @Prop({ required: true, unique: true }) // unique ID number
-  idNo: string;
+  @Prop({ unique: true, sparse: true }) 
+  idNo?: string;
 
   @Prop({ required: true, unique: true })
   username: string;

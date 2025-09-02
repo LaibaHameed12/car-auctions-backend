@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, MinLength, Matches } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, MinLength, IsOptional, Matches } from 'class-validator'; 
 
 export class RegisterDto {
     @IsString()
@@ -14,17 +14,18 @@ export class RegisterDto {
     @Matches(/^\+[1-9]\d{6,14}$/, { message: 'Invalid phone number. Use format +<countrycode><number>' })
     mobileNo: string;
 
+    // ✅ Optional fields during registration
     @IsString()
-    @IsNotEmpty({ message: 'Nationality is required' })
-    nationality: string;
+    @IsOptional()
+    nationality?: string;
 
     @IsString()
-    @IsNotEmpty({ message: 'ID Type is required' })
-    idType: string;
+    @IsOptional()
+    idType?: string;
 
     @IsString()
-    @IsNotEmpty({ message: 'ID number is required' })
-    idNo: string;
+    @IsOptional()
+    idNo?: string;
 
     @IsString()
     @IsNotEmpty({ message: 'Username is required' })

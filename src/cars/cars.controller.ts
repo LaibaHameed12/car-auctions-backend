@@ -18,7 +18,7 @@ export class CarsController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  @UseInterceptors(FilesInterceptor('files')) 
+  @UseInterceptors(FilesInterceptor('photos')) 
   async createCar(
     @Body() createCarDto: CreateCarDto,
     @UploadedFiles() files: Express.Multer.File[],

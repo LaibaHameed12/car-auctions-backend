@@ -58,8 +58,8 @@ export class CreateCarDto {
     @IsArray()
     @IsString({ each: true })
     @IsOptional()
-    photos?: string[];
+    photos: string[];
 
     @IsMongoId()
     owner: string;
-}
+}   

@@ -6,6 +6,7 @@ import { Auction, AuctionDocument } from './schemas/auction.schema';
 import { CreateAuctionDto } from './dto/create-auction.dto';
 import { Car, CarDocument } from 'src/cars/schemas/car.schema';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { User, UserDocument } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class AuctionsService {
@@ -14,8 +15,9 @@ export class AuctionsService {
   constructor(
     @InjectModel(Auction.name) private auctionModel: Model<AuctionDocument>,
     @InjectModel(Car.name) private carModel: Model<CarDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     private notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   // Create Auction
   async createAuction(dto: CreateAuctionDto) {
@@ -49,6 +51,13 @@ export class AuctionsService {
 
     const savedAuction = await auction.save();
 
+    // Add auction to seller's myCars
+    await this.userModel.findByIdAndUpdate(
+      dto.seller,
+      { $push: { myCars: savedAuction._id } },
+      { new: true }
+    );
+
     // Notify all users about auction start
     await this.notificationsService.notifyAllUsers(
       `Auction for car ${savedAuction.car} has started!`,
@@ -80,6 +89,12 @@ export class AuctionsService {
 
     const saved = await auction.save();
 
+    await this.userModel.findByIdAndUpdate(
+      userId,
+      { $addToSet: { bids: auction._id } },  // addToSet = avoid duplicates
+      { new: true }
+    );
+
     // Notify seller about new bid
     await this.notificationsService.notifyUser(
       auction.seller.toString(),
@@ -104,41 +119,57 @@ export class AuctionsService {
     if (pendingToLive.modifiedCount > 0)
       this.logger.log(`Activated ${pendingToLive.modifiedCount} auctions`);
 
-    // Live -> Completed
+    // Live -> Sold Out or Ended
     const liveAuctions = await this.auctionModel.find({ status: 'Live', endTime: { $lte: now } });
     for (const auction of liveAuctions) {
-      if (auction.bidders.length > 0) auction.winner = auction.bidders[auction.bidders.length - 1].user;
-      auction.status = 'Completed';
-      await auction.save();
+      if (auction.bidders.length > 0) {
+        // Auction has bids → Sold Out
+        auction.winner = auction.bidders[auction.bidders.length - 1].user;
+        auction.status = 'Sold Out';
+        await auction.save();
 
-      // Mark car as sold
-      await this.carModel.findByIdAndUpdate(auction.car, { isSold: true });
+        // Mark car as sold
+        await this.carModel.findByIdAndUpdate(auction.car, { isSold: true });
 
-      // Notify winner and seller
-      if (auction.winner) {
+        // Notify winner
         await this.notificationsService.notifyUser(
           auction.winner.toString(),
-          `You won the auction for car ${auction.car}!`,
+          `🎉 You won the auction for car ${auction.car}!`,
           auction._id as Types.ObjectId,
           'Auction',
         );
+
+        // Notify seller
         await this.notificationsService.notifyUser(
           auction.seller.toString(),
-          `Your auction was won by user ${auction.winner}`,
+          `✅ Your auction was won by user ${auction.winner}`,
+          auction._id as Types.ObjectId,
+          'Auction',
+        );
+      } else {
+        // Auction had no bids → Ended
+        auction.status = 'Ended';
+        await auction.save();
+
+        // Notify seller only
+        await this.notificationsService.notifyUser(
+          auction.seller.toString(),
+          `⚠️ Your auction for car ${auction.car} ended with no bids.`,
           auction._id as Types.ObjectId,
           'Auction',
         );
       }
 
-      // Notify all users that auction ended
+      // Notify all users that auction closed
       await this.notificationsService.notifyAllUsers(
         `Auction for car ${auction.car} has ended!`,
         auction._id as Types.ObjectId,
         'Auction',
       );
 
-      this.logger.log(`Closed auction ${auction._id}`);
+      this.logger.log(`Closed auction ${auction._id} with status ${auction.status}`);
     }
+
   }
 
   // Get all auctions

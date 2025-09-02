@@ -11,7 +11,7 @@ export class CreateAuctionDto {
 
     @IsOptional()
     @IsDateString()
-    startTime?: string;  // optional, defaults to current time
+    startTime?: string;  
 
     @IsNotEmpty()
     @IsDateString()

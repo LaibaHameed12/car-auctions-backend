@@ -46,7 +46,7 @@ export class Car {
   owner: Types.ObjectId;
 
   @Prop({ default: false })
-  isSold: boolean; // prevents car from being listed in new auctions
+  isSold: boolean; 
 }
 
 export type CarDocument = Car & Document;

@@ -17,7 +17,7 @@ export class Auction {
 
     @Prop({
         required: true,
-        enum: ['Live', 'Completed'],
+        enum: ['Live', 'Sold Out', 'Ended'],
         default: 'Live',
     })
     status: string;
