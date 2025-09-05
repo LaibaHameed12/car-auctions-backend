@@ -14,7 +14,6 @@ export class RegisterDto {
     @Matches(/^\+[1-9]\d{6,14}$/, { message: 'Invalid phone number. Use format +<countrycode><number>' })
     mobileNo: string;
 
-    // ✅ Optional fields during registration
     @IsString()
     @IsOptional()
     nationality?: string;

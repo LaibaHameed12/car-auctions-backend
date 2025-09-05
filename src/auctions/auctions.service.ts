@@ -22,7 +22,7 @@ export class AuctionsService {
   // Create Auction
   async createAuction(dto: CreateAuctionDto) {
     const now = new Date();
-    const start = dto.startTime ? new Date(dto.startTime) : now; // default to now
+    const start = dto.startTime ? new Date(dto.startTime) : now;
     const end = new Date(dto.endTime);
 
     if (start < now) throw new BadRequestException('Start time cannot be in the past');
@@ -54,9 +54,10 @@ export class AuctionsService {
     // Add auction to seller's myCars
     await this.userModel.findByIdAndUpdate(
       dto.seller,
-      { $push: { myCars: savedAuction._id } },
+      { $addToSet: { myCars: savedAuction._id } },
       { new: true }
     );
+
 
     // Notify all users about auction start
     await this.notificationsService.notifyAllUsers(
@@ -91,7 +92,7 @@ export class AuctionsService {
 
     await this.userModel.findByIdAndUpdate(
       userId,
-      { $addToSet: { bids: auction._id } },  // addToSet = avoid duplicates
+      { $addToSet: { bids: auction._id } },
       { new: true }
     );
 

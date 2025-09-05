@@ -23,7 +23,7 @@ export class AuthService {
     });
 
     if (existing) {
-      throw new BadRequestException('Email, username, mobile number, or ID number already exists');
+      throw new BadRequestException('Email, username, mobile number already exists');
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);

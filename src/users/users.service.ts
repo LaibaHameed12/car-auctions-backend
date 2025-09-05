@@ -14,10 +14,53 @@ export class UsersService {
     }
 
     async findOne(id: string): Promise<User | null> {
-        return this.userModel.findById(id).populate(['wishlists', 'myCars', 'bids']).exec();
+        return this.userModel.findById(id)
+            .populate({
+                path: 'wishlists',
+                populate: { path: 'car', model: 'Car' },
+            })
+            .populate({
+                path: 'myCars',
+                populate: { path: 'car', model: 'Car' },
+            })
+            .populate({
+                path: 'bids',
+                populate: { path: 'car', model: 'Car' },
+            })
+            .exec();
     }
 
     async update(id: string, updateUserDto: Partial<User>): Promise<User | null> {
         return this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true }).exec();
     }
+
+    async addToWishlist(userId: string, auctionId: string): Promise<User | null> {
+        return this.userModel
+            .findByIdAndUpdate(
+                userId,
+                { $addToSet: { wishlists: auctionId } },
+                { new: true }
+            )
+            .populate({
+                path: 'wishlists',
+                populate: { path: 'car', model: 'Car' },
+            })
+            .exec();
+    }
+
+    async removeFromWishlist(userId: string, auctionId: string): Promise<User | null> {
+        return this.userModel
+            .findByIdAndUpdate(
+                userId,
+                { $pull: { wishlists: auctionId } },
+                { new: true }
+            )
+            .populate({
+                path: 'wishlists',
+                populate: { path: 'car', model: 'Car' },
+            })
+            .exec();
+    }
+
+
 }

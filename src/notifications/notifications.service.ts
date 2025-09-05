@@ -14,24 +14,54 @@ export class NotificationsService {
     ) { }
 
     // Send notification to a single user
-    async notifyUser(userId: string, message: string, reference?: Types.ObjectId, refType?: 'Auction' | 'Bid') {
-        const notification = new this.notificationModel({ user: userId, message, reference, refType });
-        // Real-time emit via socket
-        this.gateway.emitToUser(userId, notification);
-        return notification.save();
-    }
-
-    // Send notification to all users
-    async notifyAllUsers(message: string, reference?: Types.ObjectId, refType?: 'Auction' | 'Bid') {
-        const users = await this.userModel.find({}, '_id').exec();
-        const notifications = users.map(user => ({
-            user: user._id,
+    async notifyUser(
+        userId: string,
+        message: string,
+        reference?: Types.ObjectId,
+        refType?: 'Auction' | 'Bid',
+    ) {
+        const notification = new this.notificationModel({
+            user: userId,
             message,
             reference,
             refType,
-        }));
-        return this.notificationModel.insertMany(notifications);
+        });
+        const saved = await notification.save();
+
+        // Emit real-time to the specific user via socket
+        this.gateway.emitToUser(userId, saved);
+
+        return saved;
     }
+
+
+    // Send notification to all users
+    async notifyAllUsers(
+        message: string,
+        reference?: Types.ObjectId,
+        refType?: 'Auction' | 'Bid',
+    ) {
+        const users = await this.userModel.find({}, '_id').exec();
+
+        const notifications = await this.notificationModel.insertMany(
+            users.map((user) => ({
+                user: user._id,
+                message,
+                reference,
+                refType,
+            })),
+        );
+
+        // Emit to all connected sockets
+        this.gateway.emitToAll({
+            message,
+            reference,
+            refType,
+        });
+
+        return notifications;
+    }
+
 
     // Get notifications for a user
     async getUserNotifications(userId: string) {
